@@ -8,11 +8,11 @@ SKIP_CHARACTERS = ['(', ')', '!', '[', ']', '\'', '&', ' ']
 COMPOSER_COL = 1
 FILE_COL = 0
 
-def filterroot(mainroot, extension):
+def filterroot(mainroot):
     res = []
     for root, dirs, files in os.walk(mainroot):
         for name in files:
-            if os.path.join(root, name).find(extension) != -1:
+            if os.path.join(root, name).find('.mid') != -1:
                 filename = os.path.join(root, name)
                 fntmp = ''
                 for i in range(len(filename) - 4):

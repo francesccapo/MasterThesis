@@ -125,7 +125,7 @@ def midiconversor(line):
     return int(pos), matrix
 
 
-def chromatablecreation(tracklist):
+def chromatable(tracklist):
     table = np.zeros((12,durationmidi(tracklist)))
     for i in range(len(tracklist)):
         for note in range(tracklist[i].notesNum):
