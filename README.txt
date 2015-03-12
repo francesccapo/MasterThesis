@@ -1,0 +1,1 @@
+Readme dels arxius del PFM de Francesc Capó
