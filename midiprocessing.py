@@ -9,17 +9,21 @@ import pdb
 SMF2TXT_BIN = './smf2txt'
 
 
+
 class Track():
     def __init__(self):
         self.trackID = []
         self.notesNum = []
         self.name = []
         self.info = np.empty([0, 4])
+        self.resolution = []
 
 
 def midiload(midifile):
     txttemp = 'temp.txt'
-    order = SMF2TXT_BIN + ' -q 1024 ' + midifile + ' > ' + txttemp
+    fo = open(txttemp,'w')
+    fo.close()
+    order = SMF2TXT_BIN + ' ' + midifile + ' > ' + txttemp
     try:
         os.system(order)
     except:
@@ -33,24 +37,39 @@ def midiload(midifile):
     tracklist = []
     cont = -1
     notes = 0
+    resolution = 0
+    errors = []
     for midi_line in range(len(midi_lines)):
         midi_lines[midi_line] = midi_lines[midi_line][:-1]
+        if midi_lines[midi_line] == '':
+            continue
         if midi_lines[midi_line].find('#') != -1 or midi_lines[midi_line].find('@') != -1:
+            if midi_lines[midi_line].find('resolution') != -1:
+                tp = midi_lines[midi_line].split(' ')
+                resolution = int(tp[1])
             if midi_lines[midi_line].find('track') != -1:
                 cont += 1
                 tracklist.append(Track())
                 tp = midi_lines[midi_line].split(' ')
                 tracklist[cont].trackID = tp[1]
-                tracklist[cont].name = ' '.join(tp[2:])
+                tracklist[cont].resolution = resolution
+                if tp[2] == '':
+                    tracklist[cont].name = 'Empty'
+                else:
+                    tracklist[cont].name = ' '.join(tp[2:])
                 if notes != 0:
                     tracklist[cont - 1].notesNum = notes
                     notes = 0
         else:
             tp = np.array(midi_lines[midi_line].split(' '))
-            tracklist[cont].info = np.vstack([tracklist[cont].info, tp.astype(np.float)])
+            try:
+                tracklist[cont].info = np.vstack([tracklist[cont].info, tp.astype(np.float)])
+            except:
+                errors.append(tp)
+                continue
             notes += 1
-
-    tracklist[cont].notesNum = notes
+    if cont >= 0 :
+        tracklist[cont].notesNum = notes
 
     rmlist = []
 
@@ -59,8 +78,8 @@ def midiload(midifile):
             rmlist.append(i)
     for i in range(len(rmlist) - 1, -1, -1):
         tracklist.__delitem__(rmlist[i])
-    print 'Midi "' + midifile + '" loaded'
-    return tracklist
+    #print 'Midi "' + midifile + '" loaded'
+    return tracklist, errors
 
 
 def durationmidi(tracklist):
@@ -74,8 +93,8 @@ def durationmidi(tracklist):
             for j in range(tracklist[i].notesNum - 1, -1, -1):
                 if maxtime < (tracklist[i].info[j][1] + tracklist[i].info[j][2]):
                     maxtime = tracklist[i].info[j][1] + tracklist[i].info[j][2]
-    print 'Midi duration computed'
-    maxtime = int(maxtime / 1024)
+    #print 'Midi duration computed'
+    maxtime = int(maxtime / tracklist[0].resolution)
     return maxtime
 
 
@@ -97,7 +116,7 @@ def midifilter(tracklist, maxtracks, minnotes):
 def cutmidi(tracklist, maxbeat):
     for i in range(len(tracklist)):
         for j in range(tracklist[i].notesNum - 1):
-            if tracklist[i].info[j][1] > maxbeat * 1024:
+            if tracklist[i].info[j][1] > maxbeat * tracklist[i].resolution:
                 tracklist[i].info = tracklist[i].info[:j]
                 tracklist[i].notesNum = j
                 break
@@ -106,22 +125,22 @@ def cutmidi(tracklist, maxbeat):
     return tracklist
 
 
-def midiconversor(line):
+def midiconversor(line,resolution):
     (integ, note) = divmod(line[0], 12)  # Note: (integer, residual)
-    (pos, res) = divmod(line[1], 1024)
+    (pos, res) = divmod(line[1], resolution)
     duration = line[2]
     current = line[1]
     matrix = []
     while duration > 0.0:
         tmp = np.zeros(12)
-        (pos_2, res_2) = divmod(current, 1024)
-        if duration < 1024 - res_2:
+        (pos_2, res_2) = divmod(current, resolution)
+        if duration < resolution - res_2:
             tmp[note] = duration
         else:
-            tmp[note] = 1024 - res_2
+            tmp[note] = resolution - res_2
         current += tmp[note]
         duration -= tmp[note]
-        matrix.append(tmp/1024)
+        matrix.append(tmp/resolution)
     return int(pos), matrix
 
 
@@ -129,17 +148,17 @@ def chromatable(tracklist):
     table = np.zeros((12,durationmidi(tracklist)))
     for i in range(len(tracklist)):
         for note in range(tracklist[i].notesNum):
-            (pos, mat) = midiconversor(tracklist[i].info[note])
+            (pos, mat) = midiconversor(tracklist[i].info[note], tracklist[i].resolution)
             for col in range(len(mat)):
                 table[:, pos] = table[:, pos] + mat[col]
     print 'Chroma table created'
     return table
 
 def printtable(table):
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots()
 
-    cax = ax.imshow(table, interpolation='nearest', cmap=cm.coolwarm)
-    ax.set_title('Chroma table')
+    plt.imshow(table, interpolation='nearest', cmap=cm.coolwarm)
+    plt.title('Chroma table')
     maxval = np.max(table)
     # Add colorbar, make sure to specify tick locations to match desired ticklabels
     #cbar = fig.colorbar(cax, ticks=[ 0, maxval])

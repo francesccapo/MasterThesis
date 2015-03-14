@@ -28,6 +28,7 @@ midiprocessing:
         notesNum: number of notes
         name
         info: Info per note/row [midi number, onset, duration, velocity]
+        resolution: resolution per beat
 
     midiload:
         INPUTS:     midifile - non purified path+filename of midi file

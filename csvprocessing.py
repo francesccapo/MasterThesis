@@ -15,12 +15,15 @@ def filterroot(mainroot):
             if os.path.join(root, name).find('.mid') != -1:
                 filename = os.path.join(root, name)
                 fntmp = ''
+                fntmp_2 = ''
                 for i in range(len(filename) - 4):
                     if filename[i] in SKIP_CHARACTERS:
                         fntmp += str('_')
+                        fntmp_2 += str('\\')+str(filename[i])
                         continue
                     fntmp += str(filename[i])
-                res.append((filename, name, fntmp[len(mainroot)+1:]))
+                    fntmp_2 += str(filename[i])
+                res.append((fntmp_2+'.mid', name, fntmp[len(mainroot):]))
     return res
 
 
@@ -29,33 +32,29 @@ def loadcsv(csv_file):
     lines = f.readlines()
     f.close()
 
-    header = lines[0][:-1].split(',')
+    header = lines[0][:-1].split('\t')
     body = []
     for line in range(1, len(lines)):
-        tmpstr = lines[line].replace(",,", ",_,")
-        tmpstr = tmpstr.replace(", ,", ",_,")
-        tmpstr = re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', tmpstr)
-        tmpstr = [item.translate(None, '"').strip() for item in tmpstr]
+        tmpstr = lines[line][:-1].split('\t')
         body.append(tmpstr)
 
     return header, body
 
 
 def associate(csv,pathinfo):
-    cont = 0
     noenter = []
+    newcsv = []
     for csvfile in range(len(csv)):
         for pathfile in range(len(pathinfo)):
             if csv[csvfile][0] == pathinfo[pathfile][2]:
-                cont += 1
-                csv[csvfile].append(pathinfo[pathfile][0])
-                pathinfo.pop(pathfile)
+                newcsv.append((csv[csvfile]))
+                newcsv[-1].append(pathinfo[pathfile][0])
+                del pathinfo[pathfile]
                 break
             if pathfile == len(pathinfo)-1:
-                noenter.append((csv[csvfile][0], pathinfo[pathfile][2]))
+                noenter.append(csv[csvfile])
 
-    print 'Acabat'
-    return csv, noenter
+    return newcsv, noenter
 
 
 def filterminworks(matrixinfo, minworks):
