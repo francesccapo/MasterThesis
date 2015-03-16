@@ -79,6 +79,9 @@ def midiload(midifile):
     for i in range(len(rmlist) - 1, -1, -1):
         tracklist.__delitem__(rmlist[i])
     #print 'Midi "' + midifile + '" loaded'
+
+    os.remove(txttemp)
+
     return tracklist, errors
 
 
@@ -125,7 +128,7 @@ def cutmidi(tracklist, maxbeat):
     return tracklist
 
 
-def midiconversor(line,resolution):
+def midiconversor(line, resolution):
     (integ, note) = divmod(line[0], 12)  # Note: (integer, residual)
     (pos, res) = divmod(line[1], resolution)
     duration = line[2]
@@ -144,6 +147,13 @@ def midiconversor(line,resolution):
     return int(pos), matrix
 
 
+def normalize(v):
+    norm=np.linalg.norm(v,np.inf)
+    if norm==0:
+       return v
+    return v/norm
+
+
 def chromatable(tracklist):
     table = np.zeros((12,durationmidi(tracklist)))
     for i in range(len(tracklist)):
@@ -151,17 +161,25 @@ def chromatable(tracklist):
             (pos, mat) = midiconversor(tracklist[i].info[note], tracklist[i].resolution)
             for col in range(len(mat)):
                 table[:, pos] = table[:, pos] + mat[col]
+    for col in range(np.size(table,1)):
+        table[:, col] = normalize(table[:,col])
     print 'Chroma table created'
     return table
 
+
+###############
 def printtable(table):
-    #fig, ax = plt.subplots()
 
     plt.imshow(table, interpolation='nearest', cmap=cm.coolwarm)
     plt.title('Chroma table')
-    maxval = np.max(table)
-    # Add colorbar, make sure to specify tick locations to match desired ticklabels
-    #cbar = fig.colorbar(cax, ticks=[ 0, maxval])
-    #cbar.ax.set_yticklabels(['0', (str(maxval))])# vertically oriented colorbar
 
     plt.show()
+################
+
+
+
+mid,er = midiload('verdirequiem.mid')
+
+tab = chromatable(mid)
+
+printtable(tab)
