@@ -1,5 +1,4 @@
 import os
-import re
 import operator
 import pdb
 
@@ -65,10 +64,10 @@ def filterminworks(matrixinfo, minworks):
     selection = []
 
     for line in range(len(matrixinfo)):
-        if matrixinfo[line][COMPOSER_COL] != '_':
+        if matrixinfo[line][COMPOSER_COL] != '':
             if matrixinfo[line][COMPOSER_COL] == name_Temp:
                 cont += 1
-            else :
+            else:
                 if cont != 0 and cont >= minworks:
                     for rewrite in range(cont):
                         new_body.append(matrixinfo[line-1-rewrite])
@@ -76,6 +75,34 @@ def filterminworks(matrixinfo, minworks):
                 name_Temp = matrixinfo[line][COMPOSER_COL]
                 cont = 1
 
+    if cont != 0 and cont >= minworks:
+        for rewrite in range(cont):
+            new_body.append(matrixinfo[line-1-rewrite])
+        selection.append((name_Temp,cont))
+
+    new_body = sorted(new_body, key=operator.itemgetter(FILE_COL), reverse=False)
+    new_body = sorted(new_body, key=operator.itemgetter(COMPOSER_COL), reverse=False)
+
+
     selection = sorted(selection, key=operator.itemgetter(1), reverse=True)
 
     return selection,new_body
+
+
+"""
+CHROMATABLEPAHT EXAMPLE:
+    midiname = '~/kunstderfugue/midi/midifile.mid'
+    subfoldername = 'chromatables'
+    result = '~/kunstderfugue/chromatables/midifile.txt'
+"""
+
+
+def chromatablepath(midiname, subfoldername):
+    tmpname = midiname.replace('\\', '')
+    tmpname = tmpname.replace('.mid','.txt')
+    tmpname = tmpname.replace('/midi/','/'+subfoldername+'/')
+    finpos = tmpname.rfind('/')+1
+    tmppath = tmpname[:finpos]
+    if not os.path.exists(tmppath):
+        os.makedirs(tmppath)
+    return tmpname

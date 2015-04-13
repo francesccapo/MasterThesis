@@ -3,12 +3,13 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import pylab
 import pdb
 
 
 SMF2TXT_BIN = './smf2txt'
 
-
+CHROMA_PITCH_NAMES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C']
 
 class Track():
     def __init__(self):
@@ -97,7 +98,7 @@ def durationmidi(tracklist):
                 if maxtime < (tracklist[i].info[j][1] + tracklist[i].info[j][2]):
                     maxtime = tracklist[i].info[j][1] + tracklist[i].info[j][2]
     #print 'Midi duration computed'
-    maxtime = int(maxtime / tracklist[0].resolution)
+    maxtime = int(np.ceil(maxtime / tracklist[0].resolution))
     return maxtime
 
 
@@ -163,23 +164,14 @@ def chromatable(tracklist):
                 table[:, pos] = table[:, pos] + mat[col]
     for col in range(np.size(table,1)):
         table[:, col] = normalize(table[:,col])
-    print 'Chroma table created'
+    table = np.flipud(table)
     return table
 
 
-###############
 def printtable(table):
-
-    plt.imshow(table, interpolation='nearest', cmap=cm.coolwarm)
+    pos = np.arange(len(CHROMA_PITCH_NAMES))
+    pylab.yticks(pos, CHROMA_PITCH_NAMES)
+    plt.imshow(table, aspect='auto', interpolation='nearest', cmap=cm.BuGn)
     plt.title('Chroma table')
 
     plt.show()
-################
-
-
-
-mid,er = midiload('verdirequiem.mid')
-
-tab = chromatable(mid)
-
-printtable(tab)
