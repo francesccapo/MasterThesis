@@ -97,7 +97,7 @@ CHROMATABLEPAHT EXAMPLE:
 """
 
 
-def chromatablepath(midiname, subfoldername):
+def newtxtpath(midiname, subfoldername):
     tmpname = midiname.replace('\\', '')
     tmpname = tmpname.replace('.mid','.txt')
     tmpname = tmpname.replace('/midi/','/'+subfoldername+'/')

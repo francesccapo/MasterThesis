@@ -74,7 +74,7 @@ print 'Data base filtered with minimum of ' + str(MIN_WORKS) + ' works: 2nd roun
 
 
 for file in range(len(csvfiltered_2)):
-    pathtmp = csvprocessing.chromatablepath(csvfiltered_2[file][PATH_FILENAME_COL],CHROMATABLE_FOLDERNAME)
+    pathtmp = csvprocessing.newtxtpath(csvfiltered_2[file][PATH_FILENAME_COL],CHROMATABLE_FOLDERNAME)
     csvfiltered_2[file].append(pathtmp)
     np.savetxt(pathtmp,midiprocessing.chromatable(csvfiltered_2[file][TRACKLIST_COL]))
     del csvfiltered_2[file][TRACKLIST_COL]
