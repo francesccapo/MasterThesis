@@ -59,26 +59,26 @@ def associate(csv,pathinfo):
 def filterminworks(matrixinfo, minworks):
     matrixinfo = sorted(matrixinfo, key=operator.itemgetter(COMPOSER_COL), reverse=False)
     name_Temp = 'null'
-    cont = 0
+    number = 0
     new_body = []
     selection = []
 
     for line in range(len(matrixinfo)):
         if matrixinfo[line][COMPOSER_COL] != '':
             if matrixinfo[line][COMPOSER_COL] == name_Temp:
-                cont += 1
+                number += 1
             else:
-                if cont != 0 and cont >= minworks:
-                    for rewrite in range(cont):
+                if number != 0 and number >= minworks:
+                    for rewrite in range(number):
                         new_body.append(matrixinfo[line-1-rewrite])
-                    selection.append((name_Temp,cont))
+                    selection.append((name_Temp,number))
                 name_Temp = matrixinfo[line][COMPOSER_COL]
-                cont = 1
+                number = 1
+    if number != 0 and number >= minworks:
+        for rewrite in range(number):
+            new_body.append(matrixinfo[line-rewrite])
+        selection.append((name_Temp,number))
 
-    if cont != 0 and cont >= minworks:
-        for rewrite in range(cont):
-            new_body.append(matrixinfo[line-1-rewrite])
-        selection.append((name_Temp,cont))
 
     new_body = sorted(new_body, key=operator.itemgetter(FILE_COL), reverse=False)
     new_body = sorted(new_body, key=operator.itemgetter(COMPOSER_COL), reverse=False)

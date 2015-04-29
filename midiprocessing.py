@@ -18,13 +18,14 @@ class Track():
         self.name = []
         self.info = np.empty([0, 4])
         self.resolution = []
+        self.channel = []
 
 
 def midiload(midifile):
     txttemp = 'temp.txt'
     fo = open(txttemp,'w')
     fo.close()
-    order = SMF2TXT_BIN + ' ' + midifile + ' > ' + txttemp
+    order = SMF2TXT_BIN + ' -f "%p %o %d %v %c" ' + midifile + ' > ' + txttemp
     try:
         os.system(order)
     except:
@@ -64,26 +65,26 @@ def midiload(midifile):
         else:
             tp = np.array(midi_lines[midi_line].split(' '))
             try:
-                tracklist[cont].info = np.vstack([tracklist[cont].info, tp.astype(np.float)])
+                if not tracklist[cont].channel:
+                    tracklist[cont].channel = int(tp[-1])
+                tracklist[cont].info = np.vstack([tracklist[cont].info, tp[:-1].astype(np.float)])
             except:
-                errors.append(tp)
+                errors.append((midifile,tp,midi_line))
                 continue
             notes += 1
     if cont >= 0 :
         tracklist[cont].notesNum = notes
 
-    rmlist = []
+    newtracklist = []
 
     for i in range(len(tracklist)):
-        if tracklist[i].notesNum == [] or tracklist[i].notesNum == 0:
-            rmlist.append(i)
-    for i in range(len(rmlist) - 1, -1, -1):
-        tracklist.__delitem__(rmlist[i])
+        if tracklist[i].notesNum and tracklist[i].notesNum != 0 and tracklist[i].channel != 10:
+            newtracklist.append(tracklist[i])
     #print 'Midi "' + midifile + '" loaded'
 
     os.remove(txttemp)
 
-    return tracklist, errors
+    return newtracklist, errors
 
 
 def durationmidi(tracklist):
@@ -152,7 +153,7 @@ def normalize(v):
     norm=np.linalg.norm(v,np.inf)
     if norm==0:
        return v
-    return v/norm
+    return v/float(norm)
 
 
 def chromatable(tracklist):

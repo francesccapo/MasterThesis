@@ -33,6 +33,19 @@ wr.writerows(body)
 outfile.close()
 """
 
+X
+Y
+f=open('filename.csv','w')
+for j in range(X.shape[1]):
+    f.write('x'+str(i)+',')
+f.write('composer\n')
+for i in range(X.shape[0]):
+    for j in range(X.shape[1]):
+        f.write(str(X[i,j])+',')
+    f.write(Y[i]+'\n')
+f.close()
+
+
 csvheader.append('Binary vector')
 csvheader.append('Histogram binary vector (4096 bins)')
 

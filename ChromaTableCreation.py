@@ -36,39 +36,37 @@ csvfiltered_midi_MINNOTES = []
 errors_tot = []
 
 for midfile in range (len(csvfiltered_1)):
+    if midfile < 9855:
+        continue
     print 'Arxiu ' + str(midfile)
     temptracklist = []
+    templine = csvfiltered_1[midfile][:]
     errors = []
     temptracklist,errors = midiprocessing.midiload(csvfiltered_1[midfile][PATH_FILENAME_COL])
-    """
-    if midfile > 700 and midfile < 712:
-        temptracklist = 'TEMPTRACK_ERROR'
-        errors = 'Error_provocat'
-        midifilt = 2
-    else:
-        temptracklist = 'TEMPTRACK No ERROR'
-        midifilt = 0
-    """
+
     if errors:
         errors_tot.append((csvfiltered_1[midfile][PATH_FILENAME_COL],errors))
         errors = []
+        continue
+    templine.append(temptracklist)
     midifilt = midiprocessing.midifilter(temptracklist,MAX_TRACKS,MIN_NOTES)
     if midifilt == 0:
-        csvfiltered_midi.append(csvfiltered_1[midfile])
-        csvfiltered_midi[-1].append(temptracklist)
+        csvfiltered_midi.append(templine)
     elif midifilt == 1:
-        csvfiltered_midi_MAXTRACKS.append(csvfiltered_1[midfile])
-        csvfiltered_midi_MAXTRACKS[-1].append(temptracklist)
+        csvfiltered_midi_MAXTRACKS.append(templine)
     elif midifilt == 2:
-        csvfiltered_midi_MINNOTES.append(csvfiltered_1[midfile])
-        csvfiltered_midi_MINNOTES[-1].append(temptracklist)
+        csvfiltered_midi_MINNOTES.append(templine)
     else:
         print 'ERROR with ' + csvfiltered_1[midfile][PATH_FILENAME_COL]
         sys.exit(-1)
 
 print 'Filtered by MAXTRACKS and MINNOTES'
 
+pdb.set_trace()
+
 selection_2, csvfiltered_2 = csvprocessing.filterminworks(csvfiltered_midi,MIN_WORKS)
+
+pdb.set_trace()
 
 print 'Data base filtered with minimum of ' + str(MIN_WORKS) + ' works: 2nd round'
 
@@ -80,7 +78,7 @@ for file in range(len(csvfiltered_2)):
     del csvfiltered_2[file][TRACKLIST_COL]
     print 'File num ' + str(file) + ' processed'
 
-
+pdb.set_trace()
 
 outfile = open(WORKS_COMPOSER,'wb')
 wr = csv.writer(outfile)
@@ -94,6 +92,7 @@ wr.writerow(csvheader)
 wr.writerows(csvfiltered_2)
 outfile.close()
 
+pdb.set_trace()
 
 print 'Finished'
 
