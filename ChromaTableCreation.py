@@ -36,8 +36,6 @@ csvfiltered_midi_MINNOTES = []
 errors_tot = []
 
 for midfile in range (len(csvfiltered_1)):
-    if midfile < 9855:
-        continue
     print 'Arxiu ' + str(midfile)
     temptracklist = []
     templine = csvfiltered_1[midfile][:]
@@ -62,11 +60,9 @@ for midfile in range (len(csvfiltered_1)):
 
 print 'Filtered by MAXTRACKS and MINNOTES'
 
-pdb.set_trace()
 
 selection_2, csvfiltered_2 = csvprocessing.filterminworks(csvfiltered_midi,MIN_WORKS)
 
-pdb.set_trace()
 
 print 'Data base filtered with minimum of ' + str(MIN_WORKS) + ' works: 2nd round'
 

@@ -1,0 +1,11 @@
+COSES IMPORTANTS A RECORDAR:
+
+Data base:
+	Filtratge manual de: live, piano rolls, transcriptions, obres repetides
+	Filtratge automàtic de: minim obres per compositor (20), màxim de tracks (40), mínim de notes (50)
+	Nombre final d'arxius: 9899
+
+Possibles templates: Krumhansl & Temperley
+	Provar per separat ambdós i comparar.
+	Els que donen igual, comprovar aleatoriament 40 arxius. Tots be menys 1 error de mode, 1 error de key i 2 errors d'ambdos, tots ells a obres que inclouen canvis de to.
+	Diferents: 2787 error de relatiu, 142 error de mode, 822 error de confusio de dominant, 1777 altres

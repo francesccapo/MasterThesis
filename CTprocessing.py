@@ -1,20 +1,21 @@
 import numpy as np
 import csv
+import csvprocessing
 import pdb
 
-
+PATH_FILENAME_COL = 9
 PATH_CHROMATABLE_COL = 10
 PITCH_ESTIMATED = 11
 MODE_ESTIMADED = 12
 PITCH_INDEX = 13
-PROCESSED_VECTOR = 14
 
 ChromaNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
-KEYPROFILES = [[np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]), 'Major_Orig'],
-                [np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]), 'Minor_Orig'],
-                [np.array([5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0]), 'Major_rev'],
-                [np.array([5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0]), 'Minor_rev']]
+KEYPROFILES = [#[np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]), 'Major'],
+                #[np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]), 'Minor'],
+                [np.array([5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0]), 'Major'],
+                [np.array([5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0]), 'Minor']
+                ]
 
 def loadCSVinfo(csvpath):
     csvarray = []
@@ -31,7 +32,8 @@ def loadCSVinfo(csvpath):
 def keyestimation(csvarray):
     profiles = KEYPROFILES
     for prof in range(len(KEYPROFILES)):
-        profiles[prof][0] = np.concatenate((KEYPROFILES[prof][0][1:],KEYPROFILES[prof][0]))
+        keytemp = KEYPROFILES[prof][0]         #keytemp = (KEYPROFILES[prof][0] - np.mean(KEYPROFILES[prof][0]))/np.std(KEYPROFILES[prof][0])
+        profiles[prof][0] = np.concatenate((keytemp[1:],keytemp))
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
         temparray = np.flipud(temparray)
@@ -52,7 +54,7 @@ def keyestimation(csvarray):
     return csvarray
 
 
-def binarize(csvarray):
+def binarize(csvarray, resultpath):
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
         temparray = np.flipud(temparray)
@@ -62,14 +64,19 @@ def binarize(csvarray):
             temparray = np.roll(temparray, - int(csvarray[file][PITCH_INDEX]))
         else :
             temparray = np.roll(temparray, -3 - int(csvarray[file][PITCH_INDEX]))
-        csvarray[file].append(temparray)
-        print 'File number ' + str(file) + ' processed'
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath)
+        csvarray[file].append(pathtmp)
+        np.savetxt(pathtmp,temparray)
+
+
+        print 'File number ' + str(file) + ' binarized'
 
     return csvarray
 
 
 
-def histogram(csvarray,txtbody):
+def histogram(csvarray,resultpath):
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
         temparray = np.flipud(temparray)
@@ -82,8 +89,11 @@ def histogram(csvarray,txtbody):
             else :
                 tempvector = np.roll(tempvector, -3 - int(csvarray[file][PITCH_INDEX]))
             tempdec.append(int(''.join(tempvector.astype(str)),2))
-        txtbody[file].append(tempdec)
-        histog = np.histogram(tempdec,bins=np.arange(4096))
-        txtbody[file].append(histog[0].astype(float)/temparray.shape[1])
+        histog = np.histogram(tempdec,bins=np.arange(4097))
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath)
+        csvarray[file].append(pathtmp)
+        np.savetxt(pathtmp,histog[0].astype(float)/temparray.shape[1])
         print 'File number ' + str(file) + ' processed'
-    return txtbody
+
+    return csvarray
