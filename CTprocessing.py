@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 import csvprocessing
+import scipy.stats
 import pdb
 
 PATH_FILENAME_COL = 9
@@ -11,10 +12,10 @@ PITCH_INDEX = 13
 
 ChromaNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
-KEYPROFILES = [#[np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]), 'Major'],
-                #[np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]), 'Minor'],
-                [np.array([5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0]), 'Major'],
-                [np.array([5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0]), 'Minor']
+KEYPROFILES = [[np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]), 'Major'],
+                [np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]), 'Minor'],
+                #[np.array([5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0]), 'Major'],
+                #[np.array([5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0]), 'Minor']
                 ]
 
 def loadCSVinfo(csvpath):
@@ -30,10 +31,10 @@ def loadCSVinfo(csvpath):
     return header, csvarray
 
 def keyestimation(csvarray):
-    profiles = KEYPROFILES
-    for prof in range(len(KEYPROFILES)):
-        keytemp = KEYPROFILES[prof][0]         #keytemp = (KEYPROFILES[prof][0] - np.mean(KEYPROFILES[prof][0]))/np.std(KEYPROFILES[prof][0])
-        profiles[prof][0] = np.concatenate((keytemp[1:],keytemp))
+    #profiles = KEYPROFILES
+    #for prof in range(len(KEYPROFILES)):
+        #keytemp = KEYPROFILES[prof][0]         #keytemp = (KEYPROFILES[prof][0] - np.mean(KEYPROFILES[prof][0]))/np.std(KEYPROFILES[prof][0])
+        #profiles[prof][0] = np.concatenate((keytemp[1:],keytemp))
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
         temparray = np.flipud(temparray)
@@ -41,12 +42,14 @@ def keyestimation(csvarray):
         tempval = []
         tempind = []
         tempprof = []
-        for prof in range(len(profiles)):
-            tempcorr = np.correlate(tempmean,profiles[prof][0])
-            if np.max(tempcorr) > tempval or not tempval:
-                tempind = np.argmax(tempcorr)
-                tempval = np.max(tempcorr)
-                tempprof = profiles[prof][1]
+        for prof in range(len(KEYPROFILES)):
+            for chromepitch in range(12):
+                tempcorr = scipy.stats.pearsonr(np.roll(tempmean,-chromepitch),KEYPROFILES[prof][0])
+                #tempcorr = np.correlate(tempmean,profiles[prof][0])
+                if tempcorr[0] > tempval or not tempval:
+                    tempind = chromepitch
+                    tempval = tempcorr[0]
+                    tempprof = KEYPROFILES[prof][1]
         csvarray[file].append(ChromaNames[tempind])
         csvarray[file].append(tempprof)
         csvarray[file].append(tempind)
