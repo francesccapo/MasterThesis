@@ -9,3 +9,13 @@ Possibles templates: Krumhansl & Temperley
 	Provar per separat ambdós i comparar.
 	Els que donen igual, comprovar aleatoriament 40 arxius. Tots be menys 1 error de mode, 1 error de key i 2 errors d'ambdos, tots ells a obres que inclouen canvis de to.
 	Diferents: 2787 error de relatiu, 142 error de mode, 822 error de confusio de dominant, 1777 altres
+
+
+
+Feina:
+
+Contar quants estan bé a temperley i a krumhansl
+Guardar models de Weka
+PLot de Y=accuracy, X= nombre de classes. Modificar el nombre de classes i veure com quedar la lina
+PLot de Y=accuracy, X= nombre d'obres (percentatge de d'obres, com mes obres mes accuracy)
+http://docs.scipy.org/doc/scipy-0.15.1/reference/generated/scipy.stats.pearsonr.html
