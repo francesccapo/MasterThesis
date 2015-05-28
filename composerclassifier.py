@@ -4,8 +4,10 @@ import numpy as np
 import operator
 import copy
 import pdb
-from sklearn import svm, cross_validation
-from sklearn.feature_selection import VarianceThreshold 
+import traceback
+from sklearn import svm, cross_validation, dummy, naive_bayes, ensemble
+from sklearn.feature_selection import VarianceThreshold
+from enviar_email import *
 
 FINALCSV = 'Information.csv'
 COMP_INFO = 'Works_per_composer.csv'
@@ -39,6 +41,9 @@ def composerdivision(mincomp, description, numRuns):
     csvheader, body = CTprocessing.loadCSVinfo(FINALCSV)
 
     infocomps = loadcomposers(mincomp, COMP_INFO)
+    realminimum = int(infocomps[-1][1]) #Number of works of the last composer of the list
+
+    infocomps = sorted(infocomps, key=operator.itemgetter(0), reverse=False)
 
     info['target_names'] = np.array(())
 
@@ -91,14 +96,12 @@ def composerdivision(mincomp, description, numRuns):
 
     #### Create subspreading
 
-    realminimum = int(infocomps[-1][1]) #Number of works of the last composer of the list
-
-
     run = []
+    np.random.seed(0)
+
 
     #### Seed random!
-    for seed in range(numRuns):
-        np.random.seed(seed)
+    for runn in range(numRuns):
 
         info['data'] = np.empty([0,len(info['feature_names'])])
         info['target'] = np.array((),dtype=int)
@@ -121,62 +124,112 @@ def composerdivision(mincomp, description, numRuns):
 
         run.append(copy.deepcopy(info))
         print 'Run done'
-
     return run
 
 def featureSelection(info):
  
-    for run in info:
-        run['selector'] = VarianceThreshold()
-        run['data'] = run['selector'].fit_transform(run['data'])
-        run['feature_names'] = np.array(run['feature_names'])[run['selector'].get_support()]
+    for runn in info:
+        runn['selector'] = VarianceThreshold()
+        runn['data'] = runn['selector'].fit_transform(runn['data'])
+        runn['feature_names'] = np.array(runn['feature_names'])[runn['selector'].get_support()]
 
     print 'Features Selected'
     return info
 
 def classify(info, numFolds):
 
-    results = np.empty([0,numFolds])
+    results_dum = np.empty([0,numFolds])
+    results_skv = np.empty([0,numFolds])
+    results_mnb = np.empty([0,numFolds])
+    results_rf = np.empty([0,numFolds])
+
 
     #Feature Selection
     info = featureSelection(copy.deepcopy(info))
 
     #CROSS VALIDATION
-    for rin in info:
-        results_run = np.array(())
-        ### Creation of cross validation folds
-        rin['folds'] = []
-        skf = cross_validation.StratifiedKFold(rin['target'], n_folds=numFolds)
+    for runn in info:
+        results_run_dum = np.array(())
+        results_run_skv = np.array(())
+        results_run_mnb = np.array(())
+        results_run_rf = np.array(())
+        ### Creation of cross validation folds & classification
+        skf = cross_validation.StratifiedKFold(runn['target'], n_folds=numFolds)
         for train_index, test_index in skf:
-            tmpdict = dict()
-            tmpdict['data_fold_train'], tmpdict['data_fold_test'] = rin['data'][train_index], rin['data'][test_index]
-            tmpdict['target_fold_train'], tmpdict['target_fold_test'] = rin['target'][train_index], rin['target'][test_index]
-            rin['folds'].append(tmpdict)
-
-        ### Classify folds
-        for fold in rin['folds']:
-            fold['classifier'] = svm.LinearSVC(penalty='l1', C=1, dual=False)
-            fold['classifier'].fit(fold['data_fold_train'],fold['target_fold_train'])
-            fold['score'] = fold['classifier'].score(fold['data_fold_test'], fold['target_fold_test'])
-            results_run = np.append(results_run,fold['score'])
+            dum = []
+            dum = dummy.DummyClassifier(strategy='most_frequent')
+            dum.fit(runn['data'][train_index],runn['target'][train_index])
+            results_run_dum = np.append(results_run_dum,dum.score(runn['data'][test_index], runn['target'][test_index]))
+            skv = []
+            skv = svm.LinearSVC(penalty='l1', C=1, dual=False)
+            skv.fit(runn['data'][train_index],runn['target'][train_index])
+            results_run_skv = np.append(results_run_skv,skv.score(runn['data'][test_index], runn['target'][test_index]))            
+            mnb = []
+            mnb = naive_bayes.MultinomialNB()
+            mnb.fit(runn['data'][train_index],runn['target'][train_index])
+            results_run_mnb = np.append(results_run_mnb,mnb.score(runn['data'][test_index], runn['target'][test_index]))
+            rf = []
+            rf = ensemble.RandomForestClassifier()
+            rf.fit(runn['data'][train_index],runn['target'][train_index])
+            results_run_rf = np.append(results_run_rf,rf.score(runn['data'][test_index], runn['target'][test_index]))
             print 'Classification done'
-        results = np.vstack((results,results_run))
-
-    return info, results
-
-
-more_100 = composerdivision(100, 'more_100', 10)
-inf_100, res_100 = classify(more_100, 10)
-
-more_50 = composerdivision(50, 'more_50', 10)
-inf_50, res_50 = classify(more_50, 10)
-
-more_20 = composerdivision(20, 'more_20', 10)
-inf_20, res_20 = classify(more_20, 10)
-
-np.savetxt('Results_more_100.txt',res_100)
-np.savetxt('Results_more_50.txt',res_50)
-np.savetxt('Results_more_20.txt',res_20)
+        results_dum = np.vstack((results_dum,results_run_dum))
+        results_skv = np.vstack((results_skv,results_run_skv))        
+        results_mnb = np.vstack((results_mnb,results_run_mnb))        
+        results_rf = np.vstack((results_rf,results_run_rf))        
 
 
+    return results_dum, results_skv, results_mnb, results_rf
 
+"""
+res_100_dum, res_100_skv, res_100_mnb, res_100_rf = classify(composerdivision(100, 'more_100', 10), 10)
+res_50_dum, res_50_skv, res_50_mnb, res_50_rf = classify(composerdivision(50, 'more_50', 10), 10)
+res_20_dum, res_20_skv, res_20_mnb, res_20_rf = classify(composerdivision(20, 'more_20', 10), 10)
+
+np.savetxt('Results_more_100_dum.txt',res_100_dum)
+np.savetxt('Results_more_100_skv.txt',res_100_skv)
+np.savetxt('Results_more_100_mnb.txt',res_100_mnb)
+np.savetxt('Results_more_100_rf.txt',res_100_rf)
+
+np.savetxt('Results_more_50_dum.txt',res_50_dum)
+np.savetxt('Results_more_50_skv.txt',res_50_skv)
+np.savetxt('Results_more_50_mnb.txt',res_50_mnb)
+np.savetxt('Results_more_50_rf.txt',res_50_rf)
+
+np.savetxt('Results_more_20_dum.txt',res_20_dum)
+np.savetxt('Results_more_20_skv.txt',res_20_skv)
+np.savetxt('Results_more_20_mnb.txt',res_20_mnb)
+np.savetxt('Results_more_20_rf.txt',res_20_rf)
+"""
+
+
+try:
+    for i in range(20,120,5):
+        str1 = 'more_' + str(i)
+        strdum = 'Results_more_' + str(i) + '_dum.txt'
+        strskv = 'Results_more_' + str(i) + '_skv.txt'
+        strmnb = 'Results_more_' + str(i) + '_mnb.txt'
+        strrf = 'Results_more_' + str(i) + '_rf.txt'
+        res_dum, res_skv, res_mnb, res_rf = classify(composerdivision(i,str1,10), 10)
+        np.savetxt(strdum,res_dum)
+        np.savetxt(strskv,res_skv)
+        np.savetxt(strmnb,res_mnb)
+        np.savetxt(strrf,res_rf)
+
+    for i in (120,200,240,490):
+        str1 = 'more_' + str(i)
+        strdum = 'Results_more_' + str(i) + '_dum.txt'
+        strskv = 'Results_more_' + str(i) + '_skv.txt'
+        strmnb = 'Results_more_' + str(i) + '_mnb.txt'
+        strrf = 'Results_more_' + str(i) + '_rf.txt'
+        res_dum, res_skv, res_mnb, res_rf = classify(composerdivision(i,str1,10), 10)
+        np.savetxt(strdum,res_dum)
+        np.savetxt(strskv,res_skv)
+        np.savetxt(strmnb,res_mnb)
+        np.savetxt(strrf,res_rf)
+
+    send_email('Classificacions correctes','MEEEEEEEEEEEEEEL')
+except:
+    err = traceback.format_exc()
+    print err
+    send_email('Error des collons','Qualque cosa ha anat una puta merda: ' + err)
