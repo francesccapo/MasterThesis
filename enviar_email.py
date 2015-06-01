@@ -2,7 +2,7 @@ import email.utils
 import smtplib
 
 gmail_user = "xesc88@gmail.com"
-gmail_pwd = "merdaputa"
+gmail_pwd = "password"
 FROM = 'xesc88@gmail.com'
 TO = ['xesc88@gmail.com'] #must be a list
 
