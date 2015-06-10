@@ -2,13 +2,10 @@ import numpy as np
 import csv
 import csvprocessing
 import scipy.stats
-import pdb
 
-PATH_FILENAME_COL = 9
+
 PATH_CHROMATABLE_COL = 10
-PITCH_ESTIMATED = 11
-MODE_ESTIMADED = 12
-PITCH_INDEX = 13
+
 
 ChromaNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -68,46 +65,4 @@ def keyestimation(csvarray):
     return csvarray
 
 
-def binarize(csvarray, resultpath):
-    for file in range(len(csvarray)):
-        temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
-        temparray = np.flipud(temparray)
-        temparray = np.around(temparray)
-        temparray = np.sum(temparray, axis=1)/temparray.shape[1]
-        if csvarray[file][MODE_ESTIMADED].find('Major') != -1:
-            temparray = np.roll(temparray, - int(csvarray[file][PITCH_INDEX]))
-        else :
-            temparray = np.roll(temparray, -3 - int(csvarray[file][PITCH_INDEX]))
 
-        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath)
-        csvarray[file].append(pathtmp)
-        np.savetxt(pathtmp,temparray)
-
-
-        print 'File number ' + str(file) + ' binarized'
-
-    return csvarray
-
-
-
-def histogram(csvarray,resultpath):
-    for file in range(len(csvarray)):
-        temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
-        temparray = np.flipud(temparray)
-        temparray = np.around(temparray)
-        tempdec = []
-        for vec in range(temparray.shape[1]):
-            tempvector = temparray[:,vec].astype(int)
-            if csvarray[file][MODE_ESTIMADED].find('Major') != -1:
-                tempvector = np.roll(tempvector, - int(csvarray[file][PITCH_INDEX]))
-            else :
-                tempvector = np.roll(tempvector, -3 - int(csvarray[file][PITCH_INDEX]))
-            tempdec.append(int(''.join(tempvector.astype(str)),2))
-        histog = np.histogram(tempdec,bins=np.arange(4097))
-
-        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath)
-        csvarray[file].append(pathtmp)
-        np.savetxt(pathtmp,histog[0].astype(float)/temparray.shape[1])
-        print 'File number ' + str(file) + ' processed'
-
-    return csvarray

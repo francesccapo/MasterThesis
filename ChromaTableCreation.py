@@ -6,8 +6,8 @@ import numpy as np
 import csv
 
 
-PATHMIDI = '/Users/Xesc/Dropbox/Master/Projecte/kunstderfugue/midi/'
-CSV_FILE = '/Users/Xesc/Dropbox/Master/Projecte/kunstderfugue/metadata/metadata.tsv'
+PATHMIDI = '../kunstderfugue/midi/'
+CSV_FILE = '../kunstderfugue/metadata/metadata.tsv'
 MIN_WORKS = 20
 MAX_TRACKS = 50
 MIN_NOTES = 40
@@ -74,7 +74,6 @@ for file in range(len(csvfiltered_2)):
     del csvfiltered_2[file][TRACKLIST_COL]
     print 'File num ' + str(file) + ' processed'
 
-pdb.set_trace()
 
 outfile = open(WORKS_COMPOSER,'wb')
 wr = csv.writer(outfile)
@@ -88,7 +87,6 @@ wr.writerow(csvheader)
 wr.writerows(csvfiltered_2)
 outfile.close()
 
-pdb.set_trace()
 
 print 'Finished'
 
