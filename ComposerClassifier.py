@@ -55,7 +55,7 @@ def featureSelection(composers, all_run):
     all_data = selector.fit_transform(all_data)
     for runn in all_run:
         runn['feature_names'] = np.array(runn['feature_names'])[selector.get_support()]
-        runn['feature_id'] = np.array(runn['feature_id'])[selector.get_support()]
+        runn['feature_groups'] = np.array(runn['feature_groups'])[selector.get_support()]
 
     for com in composers:
         com.data = np.array(com.data)[:,selector.get_support()]
@@ -71,20 +71,18 @@ def composerdivision(featureFile, numRuns, mincomp='', numComposers='',fixedNumW
     info = dict()
 
     info['feature_names'] = np.array(())
-    info['feature_id'] = np.array((), dtype=int)#########
+    info['feature_groups'] = np.array(())
 
     featureList = np.loadtxt(featureFile, dtype=str)
 
-    featCount = 0
-
     for feat in featureList:
         info['feature_names'] = np.hstack((info['feature_names'], np.loadtxt(DATASET + feat + '/' + 'feature_names.txt', dtype='str', delimiter=',')))
-        info['feature_id'] = np.hstack((info['feature_id'],np.repeat(featCount,info['feature_names'].shape[0]-info['feature_id'].shape[0])))
-        featCount += 1
+        info['feature_groups'] = np.hstack((info['feature_groups'],np.repeat(feat,info['feature_names'].shape[0]-info['feature_groups'].shape[0])))
 
     info['target_names'] = np.array(())
     info['target'] = np.array((),dtype=int)
 
+    pdb.set_trace()
 
     csvheader, body = CTprocessing.loadCSVinfo(FINALCSV)
 
@@ -131,7 +129,6 @@ def composerdivision(featureFile, numRuns, mincomp='', numComposers='',fixedNumW
                 all_run[runn]['target'] = np.append(all_run[runn]['target'],np.repeat(composers[ind].numTarget,realminimum))
         del(tmpcomposers)
 
-    #cont = -1
     body = sorted(body, key=operator.itemgetter(COMPOSER_COL), reverse=False)
     previouscomp = 'null'
     files = 0
@@ -142,8 +139,6 @@ def composerdivision(featureFile, numRuns, mincomp='', numComposers='',fixedNumW
         except:
             continue
         if row[COMPOSER_COL] != previouscomp:
-            #cont += 1
-            #composers.append(Composer())
             previouscomp = row[COMPOSER_COL]
             composers[ind].numWorks = 1
         elif composers[ind].numWorks < composers[ind].neededWorks:
@@ -257,7 +252,7 @@ def classify(info, numFolds):
 
 
     #return results_dum, results_svm, results_mnb, results_rf
-    return results_dum, results_svm, svm_coef, results_rf, rf_feature_importances, info[0]['feature_names'], info[0]['feature_id'], svm_confmat, rf_confmat, compNames
+    return results_dum, results_svm, svm_coef, results_rf, rf_feature_importances, info[0]['feature_names'], info[0]['feature_groups'], svm_confmat, rf_confmat, compNames
 
 
 """
@@ -366,18 +361,18 @@ try:
         strrf = 'Results_more_' + str(i) + '_rf.txt'
         strrf_feat_imp = 'Results_more_' + str(i) + '_rf_feat_imp.txt'
         str_feat_names = 'Feature_names_' + str(i) + '.txt'
-        str_feat_id = 'Feature_id_' + str(i) + '.txt'
+        str_feat_groups = 'Feature_groups_' + str(i) + '.txt'
         str_svm_conmat = 'Confusion_matrix_' + str(i) + '_svm.txt'
         str_rf_conmat = 'Confusion_matrix_' + str(i) + '_rf.txt'
         str_conmatnames = 'Confusion_matrix_names_' + str(i) + '.txt'
-        res_dum, res_svm, svm_coef, res_rf, rf_feat_imp, feat_names, feat_id, svm_conmat, rf_conmat, conmatnames   = classify(composerdivision(FEATURES,10, mincomp=i), 10)
+        res_dum, res_svm, svm_coef, res_rf, rf_feat_imp, feat_names, feat_groups, svm_conmat, rf_conmat, conmatnames   = classify(composerdivision(FEATURES,10, mincomp=i), 10)
         np.savetxt(RESULTS + strdum,res_dum)
         np.savetxt(RESULTS + strsvm,res_svm)
         np.savetxt(RESULTS + strsvm_coef,svm_coef)
         np.savetxt(RESULTS + strrf,res_rf)
         np.savetxt(RESULTS + strrf_feat_imp,rf_feat_imp)
         np.savetxt(RESULTS + str_feat_names, feat_names, delimiter=',', fmt='%s')
-        np.savetxt(RESULTS + str_feat_id, feat_id, fmt='%i')
+        np.savetxt(RESULTS + str_feat_groups, feat_groups, delimiter=',', fmt='%s')
         np.savetxt(RESULTS + str_svm_conmat, svm_conmat, header= str(svm_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
         np.savetxt(RESULTS + str_rf_conmat, rf_conmat, header= str(rf_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
         np.savetxt(RESULTS + str_conmatnames, conmatnames, delimiter=';', fmt='%s')

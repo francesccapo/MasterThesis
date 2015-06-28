@@ -10,6 +10,6 @@ sumatory_columns
 beat_pres_chroma_bin
 beat_pres_chroma_strongest
 comb_strongest_val
-comb_binarized_val   
+comb_binarized_val
 interval_unison_val
 rel_interval_val

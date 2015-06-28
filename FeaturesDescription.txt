@@ -3,8 +3,8 @@ FirstFeatures:
 	- histogram_vec: Normalized histogram of chroma classes combinations per each beat of the Chromagram. 2^12 = 4096 bins
 
 SecondFeatures:
-	- number_of_0: Number of empty bins in the histogram_vec descriptor. 1 value.
-    - correlation_template: Correlation value of the used profile template. 1 value.
+	- empty_hist_bins: Number of empty bins in the histogram_vec descriptor. 1 value.
+    - profile_template_correlation: Correlation value of the used profile template. 1 value.
     - internal_correlation(*): Correlation vectors between beats of the Chronogram. 4 vectors from lag correlation = 4.
     - differential_no_binary(*): Differential between beats of non binarized Chronogram. 1 vector from sumatory of chroma and 12 vectors from each separated chroma class.
     - differential_binary (*): Differential between beats of binarized Chronogram. 1 vector from sumatory of chroma and 12 vectors from each separated chroma class.
@@ -16,4 +16,4 @@ SecondFeatures:
     - interval_unison_val: Histogram of intervals between beat unison classes of strongest Chronogram classes. 7 classes
     - rel_interval_val: Histogram of consecutive beats with maximum of 2 simultaneous chroma classes. Ej: 2M_7m interval followed by 3m_6M interval. 49 classes
 
-* Performing of mean, standard deviation, skewness, kurtosis, pertentile 5 and percentile 95, from those indicated vectors.
+* Computing mean, standard deviation, skewness, kurtosis, pertentile 5 and percentile 95, from those indicated vectors.

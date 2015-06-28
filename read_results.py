@@ -5,7 +5,9 @@ import pdb
 PATH = '/Users/Xesc/Dropbox/Master/Projecte/git/19Juny/'
 CLASSIFIERS = ['dum', 'rf', 'svm']
 FEATURE_IMP = ['rf_feat_imp', 'svm_coef']
+FEATURE_GROUPS = 'featureGroups.txt'
 CONFMAT = ['rf', 'svm']
+
 
 
 ###### Classifier accuracies
@@ -54,27 +56,71 @@ def extractAccuracy(ran, path, classifiers, filename):
 
 ###### Feature importances
 def extractFeatures(number, path, feature_imp, filename):
-	header = np.array(('Feature_imp/Classifier'))
+	firstheader = np.array(([' ','Classifier']))
+	secondheader = np.array((['Feature_name', 'Feature_group']))
+
 
 	for clas in feature_imp:
-		header = np.append(header,clas)
-		header = np.append(header, clas + '_id')
+		firstheader = np.append(firstheader,clas)
+		secondheader = np.append(secondheader,' ')
 
 	mat = np.loadtxt(path +'Feature_names_' + str(number) + '.txt', dtype='str', delimiter=',')
+	tmpMat = np.loadtxt(path +'Feature_groups_' + str(number) + '.txt', dtype='str', delimiter=',')
+	mat = np.vstack((mat,tmpMat))
+
+
 
 	for clas in feature_imp:
 		tmpMat = np.loadtxt(path + 'Results_more_' + str(number) + '_' + clas + '.txt')
 		tmpMat = np.around(np.sum(tmpMat, axis = 0), decimals=10)
 		mat = np.vstack((mat,tmpMat))
-		tmpMat = np.loadtxt(path +'Feature_id_' + str(number) + '.txt', dtype=int)
-		mat = np.vstack((mat,tmpMat))
 
+
+	res = np.hstack((firstheader.reshape(len(firstheader),1),secondheader.reshape(len(secondheader),1), mat))
+
+	res = np.transpose(res)
+
+	f = open(path + filename,'w')
+
+	for line in res:
+		for col in range(len(line)-1):
+			f.write(str(line[col]) + ',')
+		f.write(str(line[-1]) + '\n')
+
+	f.close()
+
+	header = np.array(('Feature_imp/Classifier'))
+
+	for clas in feature_imp:
+		header = np.append(header, clas + '_group')
+
+	mat = np.array(())
+	groupsCounter = np.array((),dtype=int)
+
+	tmpGroups = np.loadtxt(path +'Feature_groups_' + str(number) + '.txt', dtype='str', delimiter=',')
+	previous = 'null'
+
+	for it in range(len(tmpGroups)):
+		if tmpGroups[it] != previous:
+			groupsCounter = np.append(groupsCounter,it)
+			mat = np.append(mat,tmpGroups[it])
+			previous = tmpGroups[it]
+	groupsCounter = np.append(groupsCounter,it+1)
+
+
+	for clas in feature_imp:
+		tmpMat = np.loadtxt(path + 'Results_more_' + str(number) + '_' + clas + '.txt')
+		tmpMat = np.around(np.sum(tmpMat, axis = 0), decimals=10)
+		tmpVec = np.array(())
+		for group in range(len(groupsCounter)-1):
+			tmpVec = np.append(tmpVec,np.sum(tmpMat[groupsCounter[group]:groupsCounter[group+1]]))
+		mat = np.vstack((mat,tmpVec))
 
 	res = np.hstack((header.reshape(len(header),1), mat))
 
 	res = np.transpose(res)
 
-	f = open(path + filename,'w')
+	f = open(path + 'Groups_' + filename,'w')
 
 	for line in res:
 		for col in range(len(line)-1):
@@ -120,12 +166,12 @@ def extractConfMat(number, path, confmat, filename, runs='indep'):
 		f.close()
 
 
-extractAccuracy([20,50,100], PATH, CLASSIFIERS, 'Accuracies.csv')
+#extractAccuracy([20,50,100], PATH, CLASSIFIERS, 'Accuracies.csv')
 
 extractFeatures(20, PATH, FEATURE_IMP, 'Features_20_works.csv')
-extractConfMat(20, PATH, CONFMAT, 'ConfMat_20_works.csv', runs='dep')
+#extractConfMat(20, PATH, CONFMAT, 'ConfMat_20_works.csv', runs='dep')
 extractFeatures(50, PATH, FEATURE_IMP, 'Features_50_works.csv')
-extractConfMat(50, PATH, CONFMAT, 'ConfMat_50_works.csv', runs='dep')
+#extractConfMat(50, PATH, CONFMAT, 'ConfMat_50_works.csv', runs='dep')
 extractFeatures(100, PATH, FEATURE_IMP, 'Features_100_works.csv')
-extractConfMat(100, PATH, CONFMAT, 'ConfMat_100_works.csv', runs='dep')
+#extractConfMat(100, PATH, CONFMAT, 'ConfMat_100_works.csv', runs='dep')
 

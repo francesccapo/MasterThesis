@@ -6,8 +6,8 @@ import pdb
 
 FINALCSV = 'Information.csv'
 NOTES_COMBINATIONS_NUMPY_TXT = 'notesDictionary.txt'
-NUMBER_OF_0_PATH = ['number_of_0', '../kunstderfugue/number_of_0/']
-PROFILE_TEMPLATE_CORR_PATH = ['correlation_template', '../kunstderfugue/correlation_template/']
+NUMBER_OF_0_PATH = ['empty_hist_bins', '../kunstderfugue/empty_hist_bins/']
+PROFILE_TEMPLATE_CORR_PATH = ['profile_template_correlation', '../kunstderfugue/profile_template_correlation/']
 INTERNAL_CORR_PATH = ['internal_correlation', '../kunstderfugue/internal_correlation/']
 DIFF_NO_BINARY_PATH = ['differential_no_binary', '../kunstderfugue/differential_no_binary/']
 DIFF_BINARY_PATH = ['differential_binary', '../kunstderfugue/differential_binary/']
@@ -36,7 +36,6 @@ KEYPROFILES = [[np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 
 
 
 csvheader, body = CTprocessing.loadCSVinfo(FINALCSV)
-
 
 def calculateStatistics(vector, usage):
 
@@ -334,7 +333,7 @@ def beatPresentChromaStrongest(csvarray, resultpath):
 
 
 def combinationHistStrongest(csvarray, resultpath, fileCombinations):
-    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32')], comments='%')
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
 
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
@@ -378,7 +377,7 @@ def combinationHistStrongest(csvarray, resultpath, fileCombinations):
 
 
 def combinationHistBinary(csvarray, resultpath, fileCombinations):
-    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32')], comments='%')
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
 
     for file in range(len(csvarray)):
         temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])

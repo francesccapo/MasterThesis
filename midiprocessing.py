@@ -173,6 +173,6 @@ def printtable(table):
     pos = np.arange(len(CHROMA_PITCH_NAMES))
     pylab.yticks(pos, CHROMA_PITCH_NAMES)
     plt.imshow(table, aspect='auto', interpolation='nearest', cmap=cm.BuGn)
-    plt.title('Chroma table')
+    plt.title('Chromagram')
 
     plt.show()
