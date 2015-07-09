@@ -2,7 +2,7 @@ import numpy as np
 import pdb
 
 
-PATH = '/Users/Xesc/Dropbox/Master/Projecte/git/19Juny/'
+PATH = '/Users/Xesc/Dropbox/Master/Projecte/git/Results_3Juliol_groups/'
 CLASSIFIERS = ['dum', 'rf', 'svm']
 FEATURE_IMP = ['rf_feat_imp', 'svm_coef']
 FEATURE_GROUPS = 'featureGroups.txt'
@@ -166,12 +166,66 @@ def extractConfMat(number, path, confmat, filename, runs='indep'):
 		f.close()
 
 
+###### Classifier accuracies
+def extractAccurGropus(ran, path, classifiers, groupsfile, filename):
+
+	featureList = np.loadtxt(groupsfile, dtype=str)
+
+	for works in ran:
+		res = []
+		for clas in classifiers:
+			line = []
+			for group in featureList:
+				tmpMat = np.loadtxt(path  + group + '/' + 'Results_more_' + str(works) + '_' + clas + '.txt')
+				line.append(np.around(np.mean(tmpMat), decimals=10))
+			res.append(line)
+			line = []
+			for group in featureList:
+				tmpMat = np.loadtxt(path  + group + '/' + 'Results_more_' + str(works) + '_' + clas + '.txt')
+				line.append(np.around(np.std(tmpMat), decimals=10))
+			res.append(line)
+
+		header = ['Classifier/Num_Composers (' + str(works) + ' works)']
+
+		for group in featureList:
+			header.append(group)
+
+		first_col = []
+
+		for clas in classifiers:
+			first_col.append(clas + '_mean')
+			first_col.append(clas + '_std')
+
+		for row in res:
+			row.insert(0,first_col.pop(0))
+
+		f = open(path + str(works) + '_works_' + filename,'w')
+
+		for col in range(len(header)-1):
+			f.write(header[col] + ',')
+		f.write(header[-1] + '\n')
+
+		for line in res:
+			for col in range(len(line)-1):
+				f.write(str(line[col]) + ',')
+			f.write(str(line[-1]) + '\n')
+
+		f.close()
+
+
+
+
+
+
+extractAccurGropus([20,50,100], PATH, CLASSIFIERS, FEATURE_GROUPS, 'Accuracies.csv')
+
+
 #extractAccuracy([20,50,100], PATH, CLASSIFIERS, 'Accuracies.csv')
 
-extractFeatures(20, PATH, FEATURE_IMP, 'Features_20_works.csv')
+#extractFeatures(20, PATH, FEATURE_IMP, 'Features_20_works.csv')
 #extractConfMat(20, PATH, CONFMAT, 'ConfMat_20_works.csv', runs='dep')
-extractFeatures(50, PATH, FEATURE_IMP, 'Features_50_works.csv')
+#extractFeatures(50, PATH, FEATURE_IMP, 'Features_50_works.csv')
 #extractConfMat(50, PATH, CONFMAT, 'ConfMat_50_works.csv', runs='dep')
-extractFeatures(100, PATH, FEATURE_IMP, 'Features_100_works.csv')
+#extractFeatures(100, PATH, FEATURE_IMP, 'Features_100_works.csv')
 #extractConfMat(100, PATH, CONFMAT, 'ConfMat_100_works.csv', runs='dep')
 

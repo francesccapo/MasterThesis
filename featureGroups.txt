@@ -1,7 +1,7 @@
 ####### Comments: #
-#binary_vec
-#histogram_vec
 empty_hist_bins
+binary_vec
+histogram_vec
 profile_template_correlation
 internal_correlation
 differential_no_binary
@@ -13,3 +13,5 @@ comb_strongest_val
 comb_binarized_val
 interval_unison_val
 rel_interval_val
+relation_chord_6class
+relation_chord_13class

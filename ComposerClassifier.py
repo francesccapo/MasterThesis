@@ -7,6 +7,7 @@ import copy
 import pdb
 import traceback
 import sys
+import os
 import random
 from sklearn import svm, cross_validation, dummy, naive_bayes, ensemble
 from sklearn.feature_selection import VarianceThreshold
@@ -21,7 +22,6 @@ FEATURES = 'featureGroups.txt'
 COMPOSER_COL = 1
 PATH_FILENAME_COL = 9
 
-#features = ['binary_vec','histogram_vec']
 
 
 class Composer():
@@ -63,17 +63,26 @@ def featureSelection(composers, all_run):
     print 'Features Selected'
     return composers, all_run
 
-def composerdivision(featureFile, numRuns, mincomp='', numComposers='',fixedNumWorks=''):
+def composerdivision(numRuns, featureFile='', featureGroup='', mincomp='', numComposers='',fixedNumWorks=''):
 
     if not mincomp and not (numComposers and fixedNumWorks):
         sys.exit('ERROR: It needs as parameters mincomp, or numComposers and fixedNumWorks')
+
+    if not ((featureFile and not featureGroup) or (not featureFile and featureGroup)):
+        sys.exit('ERROR: It needs as parameters featureFile or featureGroup')
 
     info = dict()
 
     info['feature_names'] = np.array(())
     info['feature_groups'] = np.array(())
 
-    featureList = np.loadtxt(featureFile, dtype=str)
+    if featureFile:
+        featureList = np.loadtxt(featureFile, dtype=str)
+    else:
+        featureList = np.array((featureGroup))
+
+    if featureList.size == 1:
+        featureList = np.asarray([featureList])
 
     for feat in featureList:
         info['feature_names'] = np.hstack((info['feature_names'], np.loadtxt(DATASET + feat + '/' + 'feature_names.txt', dtype='str', delimiter=',')))
@@ -81,8 +90,6 @@ def composerdivision(featureFile, numRuns, mincomp='', numComposers='',fixedNumW
 
     info['target_names'] = np.array(())
     info['target'] = np.array((),dtype=int)
-
-    pdb.set_trace()
 
     csvheader, body = CTprocessing.loadCSVinfo(FINALCSV)
 
@@ -353,35 +360,45 @@ except:
     send_email('Error des collons','Qualque cosa ha anat una puta merda: ' + err)
 """
 
-try:
-    for i in (20,50,100):
-        strdum = 'Results_more_' + str(i) + '_dum.txt'
-        strsvm = 'Results_more_' + str(i) + '_svm.txt'
-        strsvm_coef = 'Results_more_' + str(i) + '_svm_coef.txt'
-        strrf = 'Results_more_' + str(i) + '_rf.txt'
-        strrf_feat_imp = 'Results_more_' + str(i) + '_rf_feat_imp.txt'
-        str_feat_names = 'Feature_names_' + str(i) + '.txt'
-        str_feat_groups = 'Feature_groups_' + str(i) + '.txt'
-        str_svm_conmat = 'Confusion_matrix_' + str(i) + '_svm.txt'
-        str_rf_conmat = 'Confusion_matrix_' + str(i) + '_rf.txt'
-        str_conmatnames = 'Confusion_matrix_names_' + str(i) + '.txt'
-        res_dum, res_svm, svm_coef, res_rf, rf_feat_imp, feat_names, feat_groups, svm_conmat, rf_conmat, conmatnames   = classify(composerdivision(FEATURES,10, mincomp=i), 10)
-        np.savetxt(RESULTS + strdum,res_dum)
-        np.savetxt(RESULTS + strsvm,res_svm)
-        np.savetxt(RESULTS + strsvm_coef,svm_coef)
-        np.savetxt(RESULTS + strrf,res_rf)
-        np.savetxt(RESULTS + strrf_feat_imp,rf_feat_imp)
-        np.savetxt(RESULTS + str_feat_names, feat_names, delimiter=',', fmt='%s')
-        np.savetxt(RESULTS + str_feat_groups, feat_groups, delimiter=',', fmt='%s')
-        np.savetxt(RESULTS + str_svm_conmat, svm_conmat, header= str(svm_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
-        np.savetxt(RESULTS + str_rf_conmat, rf_conmat, header= str(rf_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
-        np.savetxt(RESULTS + str_conmatnames, conmatnames, delimiter=';', fmt='%s')
-        
-        send_email('Classificacions correctes','MEEEEEEEEEEEEEEL: ' + str(i) + ' classificats!')
-except:
-    err = traceback.format_exc()
-    print err
-    send_email('Error des collons','Qualque cosa ha anat una puta merda: \n' + err)
+featList =  np.loadtxt(FEATURES, dtype=str)
 
-print 'OK'
+for ft in featList:
+
+    try:
+        for i in (20,50,100):
+            strdum = 'Results_more_' + str(i) + '_dum.txt'
+            strsvm = 'Results_more_' + str(i) + '_svm.txt'
+            strsvm_coef = 'Results_more_' + str(i) + '_svm_coef.txt'
+            strrf = 'Results_more_' + str(i) + '_rf.txt'
+            strrf_feat_imp = 'Results_more_' + str(i) + '_rf_feat_imp.txt'
+            str_feat_names = 'Feature_names_' + str(i) + '.txt'
+            str_feat_groups = 'Feature_groups_' + str(i) + '.txt'
+            str_svm_conmat = 'Confusion_matrix_' + str(i) + '_svm.txt'
+            str_rf_conmat = 'Confusion_matrix_' + str(i) + '_rf.txt'
+            str_conmatnames = 'Confusion_matrix_names_' + str(i) + '.txt'
+            res_dum, res_svm, svm_coef, res_rf, rf_feat_imp, feat_names, feat_groups, svm_conmat, rf_conmat, conmatnames   = classify(composerdivision(10,featureGroup=ft, mincomp=i), 10)
+            res_subpath = RESULTS + ft + '/'
+            if not os.path.exists(res_subpath):
+                os.makedirs(res_subpath)
+            np.savetxt(res_subpath + strdum,res_dum)
+            np.savetxt(res_subpath + strsvm,res_svm)
+            np.savetxt(res_subpath + strsvm_coef,svm_coef)
+            np.savetxt(res_subpath + strrf,res_rf)
+            np.savetxt(res_subpath + strrf_feat_imp,rf_feat_imp)
+            np.savetxt(res_subpath + str_feat_names, feat_names, delimiter=',', fmt='%s')
+            np.savetxt(res_subpath + str_feat_groups, feat_groups, delimiter=',', fmt='%s')
+            np.savetxt(res_subpath + str_svm_conmat, svm_conmat, header= str(svm_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
+            np.savetxt(res_subpath + str_rf_conmat, rf_conmat, header= str(rf_conmat[0][0]) + ' Runs. The first row is related to the number of runs.')
+            np.savetxt(res_subpath + str_conmatnames, conmatnames, delimiter=';', fmt='%s')
+            
+    except:
+        err = traceback.format_exc()
+        print err
+        send_email('Error des collons','Qualque cosa ha anat una puta merda: \n' + err)
+        sys.exit(0)
+
+    send_email('Classificacions correctes','MEEEEEEEEEEEEEEL: ' + ft + ' classificats!')
+
+
+print 'FINISHED'
 

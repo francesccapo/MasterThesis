@@ -2,6 +2,8 @@ import CTprocessing
 import csvprocessing
 import numpy as np
 import scipy
+import itertools
+from collections import Counter
 import pdb
 
 FINALCSV = 'Information.csv'
@@ -18,6 +20,15 @@ COMBINATION_STRONGEST_VAL_PATH = ['comb_strongest_val', '../kunstderfugue/comb_s
 COMBINATION_BINARIZED_VAL_PATH = ['comb_binarized_val', '../kunstderfugue/comb_binarized_val/']
 INTERVALS_UNISON_VAL_PATH = ['interval_unison_val', '../kunstderfugue/interval_unison_val/']
 REL_INTERVAL_VAL_PATH = ['rel_interval_val','../kunstderfugue/rel_interval_val/']
+CHORDGRAM_PATH = ['chordgram','../kunstderfugue/chordgram/']
+RELATION_CHORD_6CLASS_LAG3 = ['relation_chord_6class_lag3','../kunstderfugue/relation_chord_6class_lag3/']
+RELATION_CHORD_6CLASS_LAG4 = ['relation_chord_6class_lag4','../kunstderfugue/relation_chord_6class_lag4/']
+RELATION_CHORD_6CLASS_LAG5 = ['relation_chord_6class_lag5','../kunstderfugue/relation_chord_6class_lag5/']
+RELATION_CHORD_13CLASS_LAG2 = ['relation_chord_13class_lag2','../kunstderfugue/relation_chord_13class_lag2/']
+RELATION_CHORD_13CLASS_LAG3 = ['relation_chord_13class_lag3','../kunstderfugue/relation_chord_13class_lag3/']
+CHORD_SIMP_6CLASS = ['chord_simp_6class','../kunstderfugue/chord_simp_6class/']
+CHORD_SIMP_13CLASS = ['chord_simp_13class','../kunstderfugue/chord_simp_13class/']
+
 
 PATH_FILENAME_COL = 9
 PATH_CHROMATABLE_COL = 10
@@ -562,39 +573,278 @@ def relBetweenStrongestVal(csvarray, resultpath, max_beat_lag):
 
     np.savetxt(resultpath[1] + 'feature_names.txt', newfeats, delimiter=',', fmt='%s')
 
+def chordgramCreation(csvarray, resultpath, fileCombinations):
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
 
-##### Number of 0 presents in the histogram
-numberOf0(body, NUMBER_OF_0_PATH)
+    for file in range(len(csvarray)):
+        temparray = np.loadtxt(csvarray[file][PATH_CHROMATABLE_COL])
 
-##### Profile correlation value
-correlationTemplate(body, PROFILE_TEMPLATE_CORR_PATH)
+        start_beat = 0
+        stop_beat = temparray.shape[1]
+        
+        while temparray[:,start_beat].any() == 0:
+            start_beat += 1
+        while temparray[:,stop_beat-1].any() == 0:
+            stop_beat -= 1
 
-##### Internel correlation beat-beat value
-internalCorrelation(body, INTERNAL_CORR_PATH, 4)
+        temparray = np.around(temparray)
 
-##### Differential between no binary beat-beat values
-differentialNoBinary(body, DIFF_NO_BINARY_PATH)
+        features = np.empty((0,2))
 
-##### Differential between binary beat-beat values
-differentialBinary(body, DIFF_BINARY_PATH)
+        for col in range(start_beat, stop_beat, 1):
+            detected = False
+            for chord in range(len(commatrix)):
+                for pos in range(12):
+                    if np.array_equal(temparray[:,col],np.roll(commatrix[chord]['mask'],pos)):
+                        detected = True
+                        features = np.vstack((features,np.array((commatrix[chord]['name'],pos))))
+                        break
+                if detected:
+                    break
+            if not detected:
+                features = np.vstack((features,np.array(('NC', -1 ))))
 
-##### Sumatory of each column of the Chroma Table
-sumatoryColumns(body, SUMATORY_COLS_PATH)
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath[0])
+        np.savetxt(pathtmp, features, delimiter=',', fmt='%s', comments='%')
 
-##### Histogram of non zero values per column of the Chroma Table
-beatPresentChromaBin(body, PRES_CHROMA_BIN_PATH)
+        print 'File number ' + str(file) + ' chordgram file created'
 
-##### Histogram of strongest values per column of the Chroma Table
-beatPresentChromaStrongest(body, PRES_CHROMA_STRONG_PATH)
 
-##### Histogram of notes combination of strongest values per column of the Chroma Table
-combinationHistStrongest(body, COMBINATION_STRONGEST_VAL_PATH, NOTES_COMBINATIONS_NUMPY_TXT)
+def relationChordgram6class(csvarray, resultpath, chordgram_path, fileCombinations, lag):
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
 
-##### Histogram of notes combination of binarized values per column of the Chroma Table
-combinationHistBinary(body, COMBINATION_BINARIZED_VAL_PATH, NOTES_COMBINATIONS_NUMPY_TXT)
+    for file in range(len(csvarray)):
+        temparray = np.loadtxt(csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],chordgram_path), dtype=[('name', '|S32'),('shift', 'i4')], delimiter=',',comments='%')
 
-##### Interval between strongest unison values per column of the Chroma Table
-intervalsBetweenStrongestUnisons(body, INTERVALS_UNISON_VAL_PATH, 4)
+        temparray_2 = np.array(())
 
-##### Relation between strongest interval values per column of the Chroma Table
-relBetweenStrongestVal(body, REL_INTERVAL_VAL_PATH, 4)
+        features = np.array(())
+
+        orderFeat = ['M','m','dim','aug','sus','NC']
+
+        """
+        Formula: first_chord_ind * 6 * 6 * 6 + second_chord_ind * 6 *6 + third_chord_ind * 6 + fourth_chord_ind
+        """
+
+        for col in range(len(temparray)):
+            if (temparray['name'][col] in commatrix['name'][:7]) or temparray['name'][col] == 'NC':
+                temparray_2 = np.append(temparray_2, 'NC')
+            else:
+                ind = np.where(commatrix['name']==temparray['name'][col])[0][0]
+                temparray_2 = np.append(temparray_2, commatrix['name_group'][ind])
+
+        for superlg in range(lag):
+            subfeatures = np.zeros(np.power(6,superlg+2))
+            for val in range(len(temparray)-(superlg+1)):
+                in_feat = 0
+                for lg in range(superlg+2):
+                    in_feat += orderFeat.index(temparray_2[val+lg]) * np.power(6,superlg + 1 - lg)
+                subfeatures[in_feat] += 1
+            features = np.append(features,subfeatures)
+        features = features / len(temparray)
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath[0])
+        np.savetxt(pathtmp, features)
+
+        print 'File number ' + str(file) + ' relation chordgram of 6 classes file created'
+
+
+    feats = np.array(())
+
+    for superlg in range(lag):
+        for lg in itertools.product(orderFeat,repeat=superlg+2):
+            it = ''
+            for lg_it in range(len(lg)-1):
+                it += lg[lg_it] + '_to_'
+            it += lg[-1] + '_lag_' + str(superlg+1)
+            feats = np.append(feats,it)
+
+    np.savetxt(resultpath[1] + 'feature_names.txt', feats, delimiter=',', fmt='%s')
+
+def relationChordgram13class(csvarray, resultpath, chordgram_path, fileCombinations, lag):
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
+
+    for file in range(len(csvarray)):
+        temparray = np.loadtxt(csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],chordgram_path), dtype=[('name', '|S32'),('shift', 'i4')], delimiter=',',comments='%')
+
+        temparray_2 = np.array(())
+
+        features = np.array(())
+
+        orderFeat = ['Perfect_unison','Minor_2nd_or_Major_7th', 'Major_2nd_or_Minor_7th', 'Minor_3rd_or_Major_6th', 'Major_3rd_or_Minor_6th',
+            'Perfect_4th_or_Perfect_5th','Tritone','M','m','dim','aug','sus','NC']
+
+        """
+        Formula: first_chord_ind * 13 * 13 + second_chord_ind * 13 + third_chord_ind......
+        """
+
+        for col in range(len(temparray)):
+            if temparray['name'][col] == 'NC':
+                temparray_2 = np.append(temparray_2, 'NC')
+            else:
+                ind = np.where(commatrix['name']==temparray['name'][col])[0][0]
+                temparray_2 = np.append(temparray_2, commatrix['name_group'][ind])
+
+        for superlg in range(lag):
+            subfeatures = np.zeros(np.power(13,superlg+2))
+            for val in range(len(temparray)-(superlg+1)):
+                in_feat = 0
+                for lg in range(superlg+2):
+                    in_feat += orderFeat.index(temparray_2[val+lg]) * np.power(13,superlg + 1 - lg)
+                subfeatures[in_feat] += 1
+            features = np.append(features,subfeatures)
+        features = features / len(temparray)
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath[0])
+        np.savetxt(pathtmp, features)
+
+        print 'File number ' + str(file) + ' relation chordgram of 13 classes file created'
+
+
+    feats = np.array(())
+
+    for superlg in range(lag):
+        for lg in itertools.product(orderFeat,repeat=superlg+2):
+            it = ''
+            for lg_it in range(len(lg)-1):
+                it += lg[lg_it] + '_to_'
+            it += lg[-1] + '_lag_' + str(superlg+1)
+            feats = np.append(feats,it)
+
+    np.savetxt(resultpath[1] + 'feature_names.txt', feats, delimiter=',', fmt='%s')
+
+
+def chordSimplif6class(csvarray, resultpath, chordgram_path, fileCombinations):
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
+
+    for file in range(len(csvarray)):
+        temparray = np.loadtxt(csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],chordgram_path), dtype=[('name', '|S32'),('shift', 'i4')], delimiter=',',comments='%')
+
+        temparray_2 = np.array(())
+
+        features = np.zeros(6)
+
+        orderFeat = ['M','m','dim','aug','sus','NC']
+
+        for col in range(len(temparray)):
+            if (temparray['name'][col] in commatrix['name'][:7]) or temparray['name'][col] == 'NC':
+                temparray_2 = np.append(temparray_2, 'NC')
+            else:
+                ind = np.where(commatrix['name']==temparray['name'][col])[0][0]
+                temparray_2 = np.append(temparray_2, commatrix['name_group'][ind])
+
+        coun = Counter(temparray_2)
+        for name in range(len(orderFeat)):
+            features[name] = coun[orderFeat[name]]
+
+        features = features / len(temparray)
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath[0])
+        np.savetxt(pathtmp, features)
+
+        print 'File number ' + str(file) + ' chordgram simplification of 6 classes file created'
+
+
+    feats = np.array(())
+
+    for name in orderFeat:
+        feats = np.append(feats,name)
+
+    np.savetxt(resultpath[1] + 'feature_names.txt', feats, delimiter=',', fmt='%s')
+
+
+def chordSimplif13class(csvarray, resultpath, chordgram_path, fileCombinations):
+    commatrix = np.loadtxt(fileCombinations, dtype=[('mask', ('i1', 12)),('name', '|S32'),('name_group', '|S32')], comments='%')
+
+    for file in range(len(csvarray)):
+        temparray = np.loadtxt(csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],chordgram_path), dtype=[('name', '|S32'),('shift', 'i4')], delimiter=',',comments='%')
+
+        temparray_2 = np.array(())
+
+        features = np.zeros(13)
+
+        orderFeat = ['Perfect_unison','Minor_2nd_or_Major_7th', 'Major_2nd_or_Minor_7th', 'Minor_3rd_or_Major_6th', 'Major_3rd_or_Minor_6th',
+            'Perfect_4th_or_Perfect_5th','Tritone','M','m','dim','aug','sus','NC']
+
+        for col in range(len(temparray)):
+            if temparray['name'][col] == 'NC':
+                temparray_2 = np.append(temparray_2, 'NC')
+            else:
+                ind = np.where(commatrix['name']==temparray['name'][col])[0][0]
+                temparray_2 = np.append(temparray_2, commatrix['name_group'][ind])
+
+        coun = Counter(temparray_2)
+        for name in range(len(orderFeat)):
+            features[name] = coun[orderFeat[name]]
+
+        features = features / len(temparray)
+
+        pathtmp = csvprocessing.newtxtpath(csvarray[file][PATH_FILENAME_COL],resultpath[0])
+        np.savetxt(pathtmp, features)
+
+        print 'File number ' + str(file) + ' chordgram simplification of 13 classes file created'
+
+
+    feats = np.array(())
+
+    for name in orderFeat:
+        feats = np.append(feats,name)
+
+    np.savetxt(resultpath[1] + 'feature_names.txt', feats, delimiter=',', fmt='%s')
+
+
+
+
+# ##### Number of 0 presents in the histogram
+# numberOf0(body, NUMBER_OF_0_PATH)
+
+# ##### Profile correlation value
+# correlationTemplate(body, PROFILE_TEMPLATE_CORR_PATH)
+
+# ##### Internel correlation beat-beat value
+# internalCorrelation(body, INTERNAL_CORR_PATH, 4)
+
+# ##### Differential between no binary beat-beat values
+# differentialNoBinary(body, DIFF_NO_BINARY_PATH)
+
+# ##### Differential between binary beat-beat values
+# differentialBinary(body, DIFF_BINARY_PATH)
+
+# ##### Sumatory of each column of the Chroma Table
+# sumatoryColumns(body, SUMATORY_COLS_PATH)
+
+# ##### Histogram of non zero values per column of the Chroma Table
+# beatPresentChromaBin(body, PRES_CHROMA_BIN_PATH)
+
+# ##### Histogram of strongest values per column of the Chroma Table
+# beatPresentChromaStrongest(body, PRES_CHROMA_STRONG_PATH)
+
+# ##### Histogram of notes combination of strongest values per column of the Chroma Table
+# combinationHistStrongest(body, COMBINATION_STRONGEST_VAL_PATH, NOTES_COMBINATIONS_NUMPY_TXT)
+
+# ##### Histogram of notes combination of binarized values per column of the Chroma Table
+# combinationHistBinary(body, COMBINATION_BINARIZED_VAL_PATH, NOTES_COMBINATIONS_NUMPY_TXT)
+
+# ##### Interval between strongest unison values per column of the Chroma Table
+# intervalsBetweenStrongestUnisons(body, INTERVALS_UNISON_VAL_PATH, 4)
+
+# ##### Relation between strongest interval values per column of the Chroma Table
+# relBetweenStrongestVal(body, REL_INTERVAL_VAL_PATH, 4)
+
+# ##### Chordgram of the Chroma Table
+# chordgramCreation(body, CHORDGRAM_PATH, NOTES_COMBINATIONS_NUMPY_TXT)
+
+# ##### Chordgram of the Chroma Table of 6 classes. Max lag = 3
+# relationChordgram6class(body, RELATION_CHORD_6CLASS_LAG3, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT, 3)
+# relationChordgram6class(body, RELATION_CHORD_6CLASS_LAG4, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT, 4)
+# relationChordgram6class(body, RELATION_CHORD_6CLASS_LAG5, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT, 5)
+
+# ##### Chordgram of the Chroma Table of 13 classes. Max lag = 2
+# relationChordgram13class(body, RELATION_CHORD_13CLASS_LAG2, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT, 2)
+# relationChordgram13class(body, RELATION_CHORD_13CLASS_LAG3, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT, 3)
+
+##### Chordgram simplification of the Chroma Table of 6 classes.
+chordSimplif6class(body, CHORD_SIMP_6CLASS, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT)
+
+##### Chordgram simplification of the Chroma Table of 6 classes.
+chordSimplif13class(body, CHORD_SIMP_13CLASS, CHORDGRAM_PATH[0], NOTES_COMBINATIONS_NUMPY_TXT)
